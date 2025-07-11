@@ -8,7 +8,7 @@ import json
 
 # ====== 設定 ======
 HOST = '0.0.0.0'
-PORT = 12345
+PORT = サーバのポート番号
 USER_CSV = "user_data.csv"
 ENTRY_STATE_FILE = "entry_state.json"
 MISSED_EXIT_FILE = "missed_exit.json"
