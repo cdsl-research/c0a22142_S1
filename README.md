@@ -51,16 +51,13 @@ Python3 server.py
 それぞれのプログラムに必要なIPアドレス，ポート番号，SSID，PASSWORDを設定する．
 
 # main.pyの実行結果
-結果の一部を抜粋する．
 main.pyの結果は以下のとおりである．
 <img width="1075" height="194" alt="Image" src="https://github.com/user-attachments/assets/380f0065-6d35-4bd2-91a1-86eb97c228b6" />
 
 # client.pyの実行結果
-結果の一部を抜粋する．
-client.pyは以下のとおりである．
+client.pyの結果は以下のとおりである．
 <img width="486" height="264" alt="Image" src="https://github.com/user-attachments/assets/dfb9a02e-4ac6-4578-8e4e-034a39281c1f" />
 
 # server.pyの実行結果
-結果の一部を抜粋する．
 server.pyの結果は以下のとおりである．
-![]
+<img width="703" height="66" alt="Image" src="https://github.com/user-attachments/assets/87a82a9f-5f59-4277-843d-d5f9007681ae" />
