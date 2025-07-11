@@ -12,9 +12,9 @@ import tkinter as tk
 from tkinter import simpledialog, scrolledtext, messagebox
 
 # ----- 設定値 -----
-DLL_PATH = r"C:\\Users\\c0a22\\Downloads\\felicalib-0.4.2\\felicalib-0.4.2\\felicalib.dll"
-SERVER_IP = "192.168.100.179"
-SERVER_PORT = 12345
+DLL_PATH = "felica.libのファイルパス"
+SERVER_IP = "サーバのIPアドレス"
+SERVER_PORT = "サーバのポート番号"
 ENTRY_TIMEOUT = 30
 RETRY_LOG_FILE = "retry_log.csv"
 PASORI_SUCCESS = 0
