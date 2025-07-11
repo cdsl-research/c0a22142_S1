@@ -25,6 +25,9 @@ client.pyがある．
 クライアントから送信されたIDと日時をログに保存し，クライアントのログと同期する．そして，APIを用いて
 スプレッドシートに日時や名前を保存する．
 
+# felica.lib
+zipファイルを展開し，client.pyと同じディレクトリに置く．
+
 # 使用言語
 main.pyはMicroPython，client.pyとserver.pyはPythonで記述されている．
 
