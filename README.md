@@ -64,3 +64,14 @@ client.pyの結果は以下のとおりである．
 server.pyの結果は以下のとおりである．
 
 <img width="703" height="66" alt="Image" src="https://github.com/user-attachments/assets/87a82a9f-5f59-4277-843d-d5f9007681ae" />
+
+# おわりに
+main.pyとclient.pyの送信されたデータはcsvファイルに保存されている．
+
+main.pyの送信されたデータ(sensor_log_2025-07-01.csv)
+<img width="584" height="25" alt="image" src="https://github.com/user-attachments/assets/12024421-9522-41e9-bc8c-ee890d42a304" />
+
+client.pyの送信されたデータ()
+<img width="616" height="24" alt="image" src="https://github.com/user-attachments/assets/77813b8e-8e6c-4326-a085-4c28d4cb35b8" />
+
+
