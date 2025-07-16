@@ -12,12 +12,13 @@ import tkinter as tk
 from tkinter import simpledialog, scrolledtext, messagebox
 
 # ----- 設定値 -----
-DLL_PATH = "felica.libのファイルパス"
+DLL_PATH = "felica.libのパス"
 SERVER_IP = "サーバのIPアドレス"
-SERVER_PORT = "サーバのポート番号"
+SERVER_PORT = 12345
 ENTRY_TIMEOUT = 30
 RETRY_LOG_FILE = "retry_log.csv"
 PASORI_SUCCESS = 0
+ESP32_PORT = 50000 
 
 # ----- 状態保持 -----
 entry_state = {}
@@ -32,6 +33,151 @@ class Felica(ctypes.Structure):
         ("pmm", ctypes.c_ubyte * 8),
         ("system_code", ctypes.c_ushort)
     ]
+
+# ===== 音声関数の強化 =====
+def play_enter_sound():
+    """入室時の音"""
+    print("🔊 入室: 高い音を再生")
+    winsound.Beep(880, 500)  # 高い音（880Hz）
+
+def play_exit_sound():
+    """退室時の音"""
+    print("🔊 退室: 低い音を再生")
+    winsound.Beep(440, 500)  # 低い音（440Hz）
+
+def play_motion_alert_sound():
+    """動き検知時の音"""
+    print("🔊 動き検知: 短い音")
+    winsound.Beep(660, 200)  # 中くらいの音（660Hz）
+    time.sleep(0.5)
+    winsound.Beep(660, 200)  # 中くらいの音（660Hz）
+
+# ===== ESP32からの通知受信 =====
+def esp32_listener():
+    """ESP32からの通知を受けて音を鳴らし、ログ保存"""
+    print(f"[ESP32受信] ポート {ESP32_PORT} で待機中...")
+    try:
+        server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_sock.bind(("", ESP32_PORT))  # すべてのインターフェースで待機
+        server_sock.listen(1)
+        while True:
+            client_sock, addr = server_sock.accept()
+            print(f"[ESP32受信] 接続: {addr}")
+            data = client_sock.recv(1024).decode().strip()
+            print(f"[ESP32受信] メッセージ: {data}")
+
+            timestamp = datetime.datetime.now()
+
+            # --- メッセージ解析 ---
+            if data.startswith("MOTION_DETECTED"):
+                distance = "Unknown"
+                if "DISTANCE=" in data:
+                    try:
+                        distance_str = data.split("DISTANCE=")[1]
+                        distance_value = float(distance_str)
+                        if distance_value < 0:
+                            distance = "Error"  # 測定失敗扱い
+                        else:
+                            distance = f"{distance_value:.2f} cm"
+                    except Exception as e:
+                        print(f"[ESP32受信] 距離パースエラー: {e}")
+                        distance = "ParseError"
+
+                play_motion_alert_sound()
+                notify_user("ESP32通知", f"動き検知 → 距離: {distance}")
+                save_esp32_log(timestamp, data, distance)
+            else:
+                print(f"[ESP32受信] 未知のメッセージ: {data}")
+                save_esp32_log(timestamp, data, "UNKNOWN")
+
+            client_sock.close()
+    except Exception as e:
+        print(f"[ESP32受信エラー] {e}")
+
+# ===== ESP32ログ保存 =====
+def save_esp32_log(timestamp, message, status):
+    """
+    ESP32からの通知をCSVに保存
+    """
+    try:
+        log_filename = f"esp32_log_{timestamp.strftime('%Y-%m-%d')}.csv"
+        file_exists = os.path.isfile(log_filename)
+
+        with open(log_filename, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(["timestamp", "message", "status"])
+            writer.writerow([
+                timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                message,
+                status
+            ])
+        print(f"📝 ESP32ログ保存: {timestamp}, {message}, {status}")
+    except Exception as e:
+        print(f"[save_esp32_log] エラー: {e}")
+
+def server_notification_listener():
+    print("[通知監視] スレッド開始")
+    buffer = ""
+    try:
+        with socket.create_connection((SERVER_IP, 12345)) as sock:
+            print("[通知監視] サーバーに接続しました")
+            while True:
+                data = sock.recv(1024)
+                if not data:
+                    print("[通知監視] サーバー接続が切れました")
+                    break
+                buffer += data.decode()
+                while "\n" in buffer:
+                    line, buffer = buffer.split("\n", 1)
+                    message = line.strip()
+                    print(f"[通知監視] 受信メッセージ: {repr(message)}")
+                    if message == "MOTION_ALERT":
+                        print("🚨 動作検知通知を受信しました")
+                        play_motion_alert_sound()
+                        notify_user("ESP32通知", "動きを検知しました")
+                    else:
+                        print(f"[通知監視] 未知のメッセージ: {repr(message)}")
+    except Exception as e:
+        print(f"[通知監視エラー] {e}")
+
+# ----- サーバーからの通知音分岐 -----
+def listen_server(sock):
+    buffer = b""
+    while True:
+        try:
+            data = sock.recv(1024)
+            if not data:
+                break
+            buffer += data
+            while b'\n' in buffer:
+                line, buffer = buffer.split(b'\n', 1)
+                line_str = line.decode().strip()
+
+                # サーバーからの通知に応じた音
+                if line_str == "MOTION_ALERT":
+                    play_motion_alert_sound()
+                elif line_str == "ENTER_ALERT":
+                    play_enter_sound()
+                elif line_str == "EXIT_ALERT":
+                    play_exit_sound()
+                else:
+                    print("📥 未知のメッセージ:", line_str)
+
+        except Exception as e:
+            print(f"[listen_server] 通信エラー: {e}")
+            break
+
+# ----- ローカルモード用通知 -----
+def notify_user_local(name, action):
+    """ローカル記録時の通知 + 音"""
+    notify_user(f"{name}さん", f"{action}（ローカル記録）")
+    if action == "入室":
+        play_enter_sound()
+    elif action == "退室":
+        play_exit_sound()
+    else:
+        play_motion_alert_sound()
 
 def check_server_connection():  # ★追加
     try:
@@ -385,6 +531,7 @@ def card_reader_loop():
 
                     notify_user(f"{name}さん", f"{action_str}（ローカル記録）")
                     play_notification_sound()
+                    notify_user_local(name, action_str)
                     continue  # この後の処理はスキップ
 
 
@@ -543,6 +690,14 @@ def main():
     # GUIスレッド起動
     gui_thread = threading.Thread(target=start_gui, daemon=True)
     gui_thread.start()
+
+    # サーバー通知監視スレッド
+    notification_thread = threading.Thread(target=server_notification_listener, daemon=True)
+    notification_thread.start()
+
+    # ESP32通知受信用スレッド
+    esp32_thread = threading.Thread(target=esp32_listener, daemon=True)
+    esp32_thread.start()
 
     # 再送スレッド
     retry_thread = threading.Thread(target=retry_loop, daemon=True)
