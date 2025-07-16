@@ -27,8 +27,10 @@ client.pyがある．
 
 # その他ファイル
 ## felica.lib
-今回使用したカードリーダーのPaSoRiを使用するために必要なファイル 
-http://felicalib.tmurakam.org/
+今回使用したカードリーダーのPaSoRiを使用するために必要なファイル
+
+参照URL：http://felicalib.tmurakam.org/
+
 zipファイルを展開し，client.pyと同じディレクトリに置く．
 
 # 使用言語
