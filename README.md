@@ -72,10 +72,10 @@ server.pyの結果は以下のとおりである．
 # おわりに
 main.pyとclient.pyの送信されたデータはcsvファイルに保存されている．
 
-main.pyの送信されたデータ(sensor_log_2025-07-01.csv)
+main.pyの送信されたデータ(esp32_log_2025-07-16.csv)の一部
 <img width="584" height="25" alt="image" src="https://github.com/user-attachments/assets/12024421-9522-41e9-bc8c-ee890d42a304" />
 
-client.pyの送信されたデータ()
+client.pyの送信されたデータ(entry_log_2025-07-16.csv)の一部
 <img width="616" height="24" alt="image" src="https://github.com/user-attachments/assets/77813b8e-8e6c-4326-a085-4c28d4cb35b8" />
 
 
