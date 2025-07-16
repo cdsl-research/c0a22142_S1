@@ -4,10 +4,10 @@ import network
 from machine import Pin, time_pulse_us, RTC
 
 # --- Wi-Fi設定 ---
-SSID = 'Wi-FIのSSID'
+SSID = 'Wi-FiのSSID'
 PASSWORD = 'Wi-Fiのパスワード'
-PC_IP = "PCのIPアドレス"
-PC_PORT = 50000
+PC_IP = "クライアントPCのIP" 
+PC_PORT = 50000            # クライアントPCで待ち受けるポート
 
 # PIRセンサー（HW-416-B）
 pir = Pin(4, Pin.IN)
@@ -52,40 +52,28 @@ def measure_distance():
 
     try:
         duration = time_pulse_us(echo, 1, 100000)  # 最大100ms待機
-        distance = (duration / 2) / 1000000 * 340  # mに変換
-        print(f"📏 測定距離: {distance:.2f} m")
+        distance = (duration / 2) / 29.1  # cmに変換
+        print(f"📏 測定距離: {distance:.2f} cm")
         return distance
     except Exception as e:
         print(f"❌ 測定エラー: {e}")
         return None
 
-# --- ログ記録関数 ---
-def log_event(pir_status, distance):
-    timestamp = time.localtime()
-    datetime_str = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(
-        timestamp[0], timestamp[1], timestamp[2],
-        timestamp[3], timestamp[4], timestamp[5]
-    )
-    date_str = "{:04d}-{:02d}-{:02d}".format(timestamp[0], timestamp[1], timestamp[2])
-    log_filename = f"sensor_log_{date_str}.csv"
-
-    log_entry = f"{datetime_str},PIR:{pir_status},Distance:{distance if distance is not None else 'Error'}\n"
-    try:
-        with open(log_filename, "a") as f:
-            f.write(log_entry)
-        print(f"📝 ログ記録: {log_entry.strip()}")
-    except Exception as e:
-        print(f"❌ ログ書き込みエラー: {e}")
-
 # --- PC送信関数 ---
-def send_motion_alert():
+def send_motion_alert(distance=None):
     try:
         addr = socket.getaddrinfo(PC_IP, PC_PORT)[0][-1]
         s = socket.socket()
         s.connect(addr)
-        s.send(b"MOTION_DETECTED\n")
+
+        # データ構築
+        msg = "MOTION_DETECTED"
+        if distance is not None:
+            msg += f",DISTANCE={distance:.2f}"
+
+        s.send((msg + "\n").encode())
         s.close()
-        print("✅ MOTION_DETECTED をPCへ送信")
+        print(f"✅ {msg} をPCへ送信")
         led.value(1)
         time.sleep(0.5)
         led.value(0)
@@ -101,7 +89,7 @@ cooldown = 15  # 15秒クールダウン
 check_period = 1.0
 check_interval = 0.05
 
-print("🚨 PIR+HC-SR04記録システム起動")
+print("🚨 PIR+HC-SR04シンプル検知システム起動")
 
 while True:
     stable_detect = True
@@ -116,15 +104,12 @@ while True:
     # HC-SR04の測定実行
     distance = measure_distance()
 
-    # ログ記録（PIR状態と距離を記録）
-    log_event("ON" if stable_detect else "OFF", distance)
-
     # PIRが検知していれば送信
     if stable_detect:
         now = time.time()
         if now - last_sent_time > cooldown:
             print("👀 PIR検知 → データ送信実行")
-            send_motion_alert()
+            send_motion_alert(distance)
             last_sent_time = now
             print("⌛ PIRが0に戻るまで待機...")
             while pir.value() == 1:
